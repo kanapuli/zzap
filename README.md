@@ -7,19 +7,32 @@
 ![Agent native](https://img.shields.io/badge/agent_native-JSON_CLI-ffb000)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-`zzap` is a TypeScript CLI that installs the `zz` command: a fuzzy,
-frecency-powered directory jumper.
+Fast directory jumping for humans. Structured directory memory for agents.
 
-It borrows the useful picker ideas from `fff.nvim` and applies them to
-directory navigation:
+`zzap` gives you two commands:
 
-- fuzzy matching with path-segment awareness
-- frecency ranking, where frequent and recent directories rise over time
-- query-to-directory combo boosts when the same query repeatedly selects a path
-- an interactive split picker with directory preview
-- shell integration so `zz` can change the current shell directory
+- `zz`: an interactive fuzzy directory jumper for your shell.
+- `zzap`: a JSON CLI that lets agents resolve the right project directory
+  without opening a TUI.
 
-## Install locally
+It learns from how directories are used, ranks by fuzzy match plus frecency, and
+can surface immediate child directories before you explicitly add them.
+
+## Why
+
+Humans and coding agents have the same local-context problem: the right project
+is somewhere on disk, but the exact path is easy to forget.
+
+`zzap` keeps a small navigation memory:
+
+- Use `zz paper` to jump quickly as a human.
+- Use `zzap query paper --json` to give Codex, Claude Code, or another agent a
+  ranked shortlist.
+- Record successful choices so future lookups improve.
+
+No daemon. No database server. No runtime dependencies.
+
+## Install
 
 ```sh
 npm install
@@ -27,9 +40,7 @@ npm run build
 npm link
 ```
 
-## Shell setup
-
-Add this to your shell configuration:
+Add shell integration:
 
 ```sh
 eval "$(zz init zsh)"
@@ -41,25 +52,49 @@ For bash:
 eval "$(zz init bash)"
 ```
 
-## Usage
+## Human Workflow
+
+Seed useful directories:
+
+```sh
+zz add ~/work/project
+zz add .
+```
+
+Jump interactively:
 
 ```sh
 zz
 zz src
-zz add ~/work/project
+zz academic paper
+```
+
+Useful maintenance commands:
+
+```sh
 zz list
 zz prune
 zz doctor
 ```
 
-`zz` opens the interactive picker. Press `Enter` to jump, `Esc` or `Ctrl-C` to
-cancel, `Up`/`Down` or `Ctrl-P`/`Ctrl-N` to move, and type to filter.
+In the picker:
 
-## Agent Usage
+| Key | Action |
+| --- | --- |
+| `Enter` | Jump to selected directory |
+| `Esc` / `Ctrl-C` | Cancel |
+| `Up` / `Ctrl-P` | Move up |
+| `Down` / `Ctrl-N` | Move down |
+| Typing | Refine fuzzy query |
 
-`zz` is human-native and interactive. `zzap` is agent-native and structured, so
-tools like Codex or Claude Code can resolve project directories without opening
-the picker.
+`zz` uses your terminal theme. It avoids hard-coded colors and relies on
+terminal-native styling.
+
+## Agent Workflow
+
+`zz` is human-native. `zzap` is agent-native.
+
+Agents should use `zzap` when they need a reliable `workdir`:
 
 ```sh
 zzap query "academic paper" --json --limit 5
@@ -68,7 +103,7 @@ zzap record ~/academic-research-skills/academic-paper --query "academic paper" -
 zzap doctor --json
 ```
 
-`zzap query` returns ranked candidates with score breakdowns:
+Example `zzap query` output:
 
 ```json
 {
@@ -88,23 +123,43 @@ zzap doctor --json
 }
 ```
 
-Agent feedback is tracked separately from human `zz` visits. `zzap` uses both
-human and agent feedback when ranking for agents, while the interactive `zz`
-picker keeps using human navigation history.
+Agent feedback is tracked separately from human `zz` visits. Agent queries use
+both human and agent feedback; the interactive picker remains driven by human
+navigation history.
 
 ## Agent Skills
 
-`zzap` ships a reusable agent skill at
-`skills/zzap-directory-resolver/`. Install it into Codex or Claude Code to teach
-agents when to use `zzap query`, how to choose a safe `workdir`, and when to
-record agent feedback.
+`zzap` ships a reusable skill for agents:
+
+```text
+skills/zzap-directory-resolver/
+```
+
+Install it into Codex or Claude Code to teach agents:
+
+- when to call `zzap query`
+- when a result is safe to use as `workdir`
+- when to ask the user to disambiguate
+- when to record successful agent usage
 
 See [docs/agent-skills.md](docs/agent-skills.md).
 
-## Appearance
+## Ranking
 
-`zz` avoids hard-coded colors and uses terminal-native styling so your terminal
-theme controls the palette.
+`zzap` ranks candidates with:
+
+```text
+total_score = fuzzy_score + frecency_score + combo_score - path_length_penalty
+```
+
+Signals:
+
+- Fuzzy path matching with path-segment awareness.
+- Frecency, so frequent and recent directories rise.
+- Query combo boosts, so repeated query-to-directory choices are learned.
+- Immediate child-directory discovery from known paths.
+
+Read the full scoring explanation in [docs/ranking.md](docs/ranking.md).
 
 ## Benchmark
 
@@ -120,15 +175,17 @@ and p95 times from repeated local runs after warmup.
 
 The ranking engine itself is sub-millisecond for 1,000 candidates and under
 10 ms for 10,000 candidates in this benchmark. End-to-end CLI time includes
-Node.js process startup, reading the history file, expanding child directories,
-ranking, recording the selected path, and writing history back to disk.
+Node.js process startup, reading history, expanding child directories, ranking,
+recording the selected path, and writing history back to disk.
 
-Because processes cannot change their parent shell directory directly, `zz init`
+## Docs
+
+- [Agent usage](docs/agent-usage.md)
+- [Agent skill installation](docs/agent-skills.md)
+- [Ranking model](docs/ranking.md)
+
+## Notes
+
+Processes cannot change their parent shell directory directly. `zz init`
 installs a shell function that calls the compiled `zz` binary and then runs
-`cd` in the shell.
-
-## Phase 2
-
-The project is structured so an agent-native interface can be added later
-without rewriting the search engine. The core scoring, storage, and selection
-logic are separated from the terminal UI.
+`cd` in your active shell.

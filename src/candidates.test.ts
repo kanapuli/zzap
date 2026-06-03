@@ -32,7 +32,7 @@ test('candidateDirectories includes immediate child directories', async () => {
 
 test('rankDirectories can find a discovered child directory', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-fixture-'));
-  const child = path.join(root, 'academic-paper');
+  const child = path.join(root, 'target-child');
 
   await fs.mkdir(child);
 
@@ -47,7 +47,7 @@ test('rankDirectories can find a discovered child directory', async () => {
   ];
 
   const candidates = await candidateDirectories(records, 200);
-  const ranked = rankDirectories(candidates, 'paper', 200);
+  const ranked = rankDirectories(candidates, 'target-child', 200);
 
   assert.equal(ranked[0]?.record.path, child);
 });
