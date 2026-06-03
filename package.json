@@ -1,0 +1,29 @@
+{
+  "name": "zzap",
+  "version": "0.1.0",
+  "description": "A frecency-powered fuzzy directory jumper with the zz command.",
+  "type": "module",
+  "bin": {
+    "zz": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test dist/**/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3"
+  },
+  "license": "MIT"
+}
