@@ -1,5 +1,12 @@
 # zzap
 
+[![CI](https://github.com/kanapuli/zzap/actions/workflows/ci.yml/badge.svg)](https://github.com/kanapuli/zzap/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
+![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-339933)
+![Runtime dependencies](https://img.shields.io/badge/runtime_dependencies-0-2ea44f)
+![Agent native](https://img.shields.io/badge/agent_native-JSON_CLI-ffb000)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 `zzap` is a TypeScript CLI that installs the `zz` command: a fuzzy,
 frecency-powered directory jumper.
 
