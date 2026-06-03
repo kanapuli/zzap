@@ -1,4 +1,4 @@
-import {CLEAR_SCREEN, HIDE_CURSOR, SHOW_CURSOR, stripAnsi, themeFromEnvironment} from './ansi.js';
+import {CLEAR_SCREEN, HIDE_CURSOR, SHOW_CURSOR, defaultPickerTheme, stripAnsi} from './ansi.js';
 import {previewDirectory} from './preview.js';
 import {rankDirectories} from './rank.js';
 import {displayPath, shortenPath} from './path_utils.js';
@@ -28,7 +28,7 @@ type PickerAction =
   | {readonly kind: 'up'};
 
 export async function pickDirectory(options: PickerOptions): Promise<string | undefined> {
-  const theme = options.theme ?? themeFromEnvironment();
+  const theme = options.theme ?? defaultPickerTheme();
   const initialRanked = rankDirectories(options.records, options.initialQuery, options.nowMs);
   let state: PickerState = {
     previewLines: await selectedPreview(initialRanked, 0),

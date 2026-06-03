@@ -48,17 +48,10 @@ zz doctor
 `zz` opens the interactive picker. Press `Enter` to jump, `Esc` or `Ctrl-C` to
 cancel, `Up`/`Down` or `Ctrl-P`/`Ctrl-N` to move, and type to filter.
 
-## Themes
+## Appearance
 
-`zz` supports lightweight terminal themes:
-
-```sh
-ZZAP_THEME=ember zz
-ZZAP_THEME=ocean zz
-ZZAP_THEME=mono zz
-```
-
-`ember` is the default.
+`zz` avoids hard-coded colors and uses terminal-native styling so your terminal
+theme controls the palette.
 
 Because processes cannot change their parent shell directory directly, `zz init`
 installs a shell function that calls the compiled `zz` binary and then runs
