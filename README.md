@@ -92,6 +92,15 @@ Agent feedback is tracked separately from human `zz` visits. `zzap` uses both
 human and agent feedback when ranking for agents, while the interactive `zz`
 picker keeps using human navigation history.
 
+## Agent Skills
+
+`zzap` ships a reusable agent skill at
+`skills/zzap-directory-resolver/`. Install it into Codex or Claude Code to teach
+agents when to use `zzap query`, how to choose a safe `workdir`, and when to
+record agent feedback.
+
+See [docs/agent-skills.md](docs/agent-skills.md).
+
 ## Appearance
 
 `zz` avoids hard-coded colors and uses terminal-native styling so your terminal
