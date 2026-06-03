@@ -53,6 +53,23 @@ cancel, `Up`/`Down` or `Ctrl-P`/`Ctrl-N` to move, and type to filter.
 `zz` avoids hard-coded colors and uses terminal-native styling so your terminal
 theme controls the palette.
 
+## Benchmark
+
+Benchmarked on Darwin arm64 with Node.js v22.16.0. Values are wall-clock median
+and p95 times from repeated local runs after warmup.
+
+| Operation | Dataset | Median | p95 |
+| --- | ---: | ---: | ---: |
+| In-memory ranking | 1,000 candidates | 0.63 ms | 0.75 ms |
+| In-memory ranking | 10,000 candidates | 8.07 ms | 9.98 ms |
+| Candidate expansion | 100 stored dirs + 1,000 child dirs | 3.42 ms | 4.63 ms |
+| End-to-end non-interactive jump | 100 stored dirs + 1,000 child dirs | 63.03 ms | 63.83 ms |
+
+The ranking engine itself is sub-millisecond for 1,000 candidates and under
+10 ms for 10,000 candidates in this benchmark. End-to-end CLI time includes
+Node.js process startup, reading the history file, expanding child directories,
+ranking, recording the selected path, and writing history back to disk.
+
 Because processes cannot change their parent shell directory directly, `zz init`
 installs a shell function that calls the compiled `zz` binary and then runs
 `cd` in the shell.
