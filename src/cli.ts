@@ -2,6 +2,7 @@
 import * as fs from 'node:fs/promises';
 import * as nodeFs from 'node:fs';
 import {fileURLToPath} from 'node:url';
+import {candidateDirectories} from './candidates.js';
 import {now} from './time.js';
 import {
   defaultStorePath,
@@ -89,10 +90,11 @@ async function jump(context: CommandContext, args: readonly string[]): Promise<n
   }
 
   const nowMs = now();
+  const candidates = await candidateDirectories(data.directories, nowMs);
   const terminal = openInteractiveTerminal(context.stdin, context.stderr);
   const selectedPath = terminal !== undefined ?
-    await pickWithTerminal(data.directories, query, nowMs, terminal) :
-    firstMatchPath(data.directories, query, nowMs);
+    await pickWithTerminal(candidates, query, nowMs, terminal) :
+    firstMatchPath(candidates, query, nowMs);
 
   if (terminal !== undefined) {
     terminal.close();
