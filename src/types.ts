@@ -1,4 +1,7 @@
 export interface DirectoryRecord {
+  readonly agentLastSeenAt?: number;
+  readonly agentQueryHits?: Readonly<Record<string, number>>;
+  readonly agentVisits?: number;
   readonly discoveredFrom?: string;
   readonly path: string;
   readonly firstSeenAt: number;

@@ -48,6 +48,43 @@ zz doctor
 `zz` opens the interactive picker. Press `Enter` to jump, `Esc` or `Ctrl-C` to
 cancel, `Up`/`Down` or `Ctrl-P`/`Ctrl-N` to move, and type to filter.
 
+## Agent Usage
+
+`zz` is human-native and interactive. `zzap` is agent-native and structured, so
+tools like Codex or Claude Code can resolve project directories without opening
+the picker.
+
+```sh
+zzap query "academic paper" --json --limit 5
+zzap resolve "academic paper" --json
+zzap record ~/academic-research-skills/academic-paper --query "academic paper" --actor agent
+zzap doctor --json
+```
+
+`zzap query` returns ranked candidates with score breakdowns:
+
+```json
+{
+  "query": "paper",
+  "results": [
+    {
+      "path": "/Users/example/academic-research-skills/academic-paper",
+      "displayPath": "~/academic-research-skills/academic-paper",
+      "score": 233,
+      "fuzzyScore": 93,
+      "frecencyScore": 120,
+      "comboScore": 20,
+      "source": "child",
+      "discoveredFrom": "/Users/example/academic-research-skills"
+    }
+  ]
+}
+```
+
+Agent feedback is tracked separately from human `zz` visits. `zzap` uses both
+human and agent feedback when ranking for agents, while the interactive `zz`
+picker keeps using human navigation history.
+
 ## Appearance
 
 `zz` avoids hard-coded colors and uses terminal-native styling so your terminal

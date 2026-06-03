@@ -4,7 +4,8 @@
   "description": "A frecency-powered fuzzy directory jumper with the zz command.",
   "type": "module",
   "bin": {
-    "zz": "./dist/cli.js"
+    "zz": "./dist/cli.js",
+    "zzap": "./dist/agent_cli.js"
   },
   "files": [
     "dist",

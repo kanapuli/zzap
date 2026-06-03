@@ -6,6 +6,8 @@ import type {DirectoryRecord, StoreData} from './types.js';
 
 const STORE_VERSION = 1;
 
+export type VisitActor = 'agent' | 'user';
+
 export function defaultStorePath(): string {
   const stateHome = process.env['XDG_STATE_HOME'];
   const base = stateHome !== undefined && stateHome.length > 0 ?
@@ -46,7 +48,12 @@ export function recordVisit(
   directoryPath: string,
   query: string,
   nowMs: number,
+  actor: VisitActor = 'user',
 ): StoreData {
+  if (actor === 'agent') {
+    return recordAgentVisit(data, directoryPath, query, nowMs);
+  }
+
   const normalizedQuery = normalizeQuery(query);
   const existing = data.directories.find((record) => record.path === directoryPath);
   const records = data.directories.filter((record) => record.path !== directoryPath);
@@ -64,6 +71,41 @@ export function recordVisit(
     path: directoryPath,
     queryHits,
     visits: (existing?.visits ?? 0) + 1,
+  };
+
+  return {
+    directories: [...records, nextRecord],
+    version: STORE_VERSION,
+  };
+}
+
+function recordAgentVisit(
+  data: StoreData,
+  directoryPath: string,
+  query: string,
+  nowMs: number,
+): StoreData {
+  const normalizedQuery = normalizeQuery(query);
+  const existing = data.directories.find((record) => record.path === directoryPath);
+  const records = data.directories.filter((record) => record.path !== directoryPath);
+  const previousQueryHits = existing?.agentQueryHits ?? {};
+  const agentQueryHits = normalizedQuery.length === 0 ?
+    previousQueryHits :
+    {
+      ...previousQueryHits,
+      [normalizedQuery]: (previousQueryHits[normalizedQuery] ?? 0) + 1,
+    };
+
+  const nextRecord: DirectoryRecord = {
+    ...existing,
+    agentLastSeenAt: nowMs,
+    agentQueryHits,
+    agentVisits: (existing?.agentVisits ?? 0) + 1,
+    firstSeenAt: existing?.firstSeenAt ?? nowMs,
+    lastSeenAt: existing?.lastSeenAt ?? nowMs,
+    path: directoryPath,
+    queryHits: existing?.queryHits ?? {},
+    visits: existing?.visits ?? 0,
   };
 
   return {
@@ -127,7 +169,11 @@ function isDirectoryRecord(value: unknown): value is DirectoryRecord {
     typeof value['firstSeenAt'] === 'number' &&
     typeof value['lastSeenAt'] === 'number' &&
     typeof value['visits'] === 'number' &&
-    isStringNumberRecord(value['queryHits']);
+    isStringNumberRecord(value['queryHits']) &&
+    isOptionalNumber(value['agentLastSeenAt']) &&
+    isOptionalNumber(value['agentVisits']) &&
+    isOptionalStringNumberRecord(value['agentQueryHits']) &&
+    isOptionalString(value['discoveredFrom']);
 }
 
 function isStringNumberRecord(value: unknown): value is Readonly<Record<string, number>> {
@@ -136,6 +182,18 @@ function isStringNumberRecord(value: unknown): value is Readonly<Record<string, 
   }
 
   return Object.values(value).every((item) => typeof item === 'number');
+}
+
+function isOptionalStringNumberRecord(value: unknown): value is Readonly<Record<string, number>> | undefined {
+  return value === undefined || isStringNumberRecord(value);
+}
+
+function isOptionalNumber(value: unknown): value is number | undefined {
+  return value === undefined || typeof value === 'number';
+}
+
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === 'string';
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
