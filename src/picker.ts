@@ -1,8 +1,9 @@
-import {CLEAR_SCREEN, HIDE_CURSOR, SHOW_CURSOR, cyan, dim, inverse, muted, stripAnsi} from './ansi.js';
+import {CLEAR_SCREEN, HIDE_CURSOR, SHOW_CURSOR, stripAnsi, themeFromEnvironment} from './ansi.js';
 import {previewDirectory} from './preview.js';
 import {rankDirectories} from './rank.js';
 import {displayPath, shortenPath} from './path_utils.js';
 import type {DirectoryRecord, RankedDirectory, TerminalSize} from './types.js';
+import type {PickerTheme} from './ansi.js';
 
 interface PickerState {
   readonly query: string;
@@ -17,6 +18,7 @@ interface PickerOptions {
   readonly records: readonly DirectoryRecord[];
   readonly stderr: NodeJS.WriteStream;
   readonly stdin: NodeJS.ReadStream;
+  readonly theme?: PickerTheme;
 }
 
 type PickerAction =
@@ -26,6 +28,7 @@ type PickerAction =
   | {readonly kind: 'up'};
 
 export async function pickDirectory(options: PickerOptions): Promise<string | undefined> {
+  const theme = options.theme ?? themeFromEnvironment();
   const initialRanked = rankDirectories(options.records, options.initialQuery, options.nowMs);
   let state: PickerState = {
     previewLines: await selectedPreview(initialRanked, 0),
@@ -35,7 +38,7 @@ export async function pickDirectory(options: PickerOptions): Promise<string | un
   };
 
   if (state.ranked.length === 0 && options.initialQuery.length > 0) {
-    render(options.stderr, state);
+    render(options.stderr, state, theme);
   }
 
   return new Promise((resolve) => {
@@ -61,7 +64,7 @@ export async function pickDirectory(options: PickerOptions): Promise<string | un
         ...state,
         previewLines: await selectedPreview(state.ranked, state.selectedIndex),
       };
-      render(stderr, state);
+      render(stderr, state, theme);
     }
 
     function finish(value: string | undefined): void {
@@ -70,7 +73,7 @@ export async function pickDirectory(options: PickerOptions): Promise<string | un
     }
 
     function onResize(): void {
-      render(stderr, state);
+      render(stderr, state, theme);
     }
 
     function onData(chunk: Buffer): void {
@@ -104,7 +107,7 @@ export async function pickDirectory(options: PickerOptions): Promise<string | un
     stdin.resume();
     stdin.on('data', onData);
     process.on('SIGWINCH', onResize);
-    render(stderr, state);
+    render(stderr, state, theme);
   });
 }
 
@@ -177,9 +180,9 @@ function actionFromKey(key: string): PickerAction | undefined {
   return undefined;
 }
 
-function render(stderr: NodeJS.WriteStream, state: PickerState): void {
+function render(stderr: NodeJS.WriteStream, state: PickerState, theme: PickerTheme): void {
   const size = terminalSize(stderr);
-  const lines = layoutLines(state, size);
+  const lines = layoutLines(state, size, theme);
   stderr.write(`${CLEAR_SCREEN}${lines.join('\n')}`);
 }
 
@@ -190,23 +193,23 @@ function terminalSize(stream: NodeJS.WriteStream): TerminalSize {
   };
 }
 
-function layoutLines(state: PickerState, size: TerminalSize): readonly string[] {
-  const header = `${cyan('zz')} ${dim('jump to')} ${state.query}`;
-  const help = muted('enter jump  esc cancel  ctrl-n/down next  ctrl-p/up prev');
+function layoutLines(state: PickerState, size: TerminalSize, theme: PickerTheme): readonly string[] {
+  const header = `${theme.header('zz')} ${theme.dim('jump to')} ${theme.accent(state.query)}`;
+  const help = theme.dim('enter jump  esc cancel  ctrl-n/down next  ctrl-p/up prev');
   const bodyHeight = Math.max(5, size.rows - 3);
   const split = size.columns >= 100;
 
   if (split) {
     return [
       fitLine(header, size.columns),
-      ...splitBodyLines(state, size.columns, bodyHeight),
+      ...splitBodyLines(state, size.columns, bodyHeight, theme),
       fitLine(help, size.columns),
     ];
   }
 
   return [
     fitLine(header, size.columns),
-    ...stackedBodyLines(state, size.columns, bodyHeight),
+    ...stackedBodyLines(state, size.columns, bodyHeight, theme),
     fitLine(help, size.columns),
   ];
 }
@@ -215,17 +218,18 @@ function splitBodyLines(
   state: PickerState,
   columns: number,
   height: number,
+  theme: PickerTheme,
 ): readonly string[] {
   const leftWidth = Math.max(38, Math.floor(columns * 0.52));
   const rightWidth = columns - leftWidth - 3;
-  const list = resultLines(state, leftWidth, height);
-  const preview = previewLines(state, rightWidth, height);
+  const list = resultLines(state, leftWidth, height, theme);
+  const preview = previewLines(state, rightWidth, height, theme);
   const lines: string[] = [];
 
   for (let index = 0; index < height; index++) {
     const left = fitLine(list[index] ?? '', leftWidth);
     const right = fitLine(preview[index] ?? '', rightWidth);
-    lines.push(`${left} ${muted('│')} ${right}`);
+    lines.push(`${left} ${theme.separator('│')} ${right}`);
   }
 
   return lines;
@@ -235,44 +239,55 @@ function stackedBodyLines(
   state: PickerState,
   columns: number,
   height: number,
+  theme: PickerTheme,
 ): readonly string[] {
   const listHeight = Math.max(3, Math.floor(height * 0.6));
   const previewHeight = height - listHeight - 1;
 
   return [
-    ...resultLines(state, columns, listHeight),
-    muted('─'.repeat(columns)),
-    ...previewLines(state, columns, previewHeight),
+    ...resultLines(state, columns, listHeight, theme),
+    theme.separator('─'.repeat(columns)),
+    ...previewLines(state, columns, previewHeight, theme),
   ];
 }
 
-function resultLines(state: PickerState, width: number, height: number): readonly string[] {
+function resultLines(
+  state: PickerState,
+  width: number,
+  height: number,
+  theme: PickerTheme,
+): readonly string[] {
   const visible = state.ranked.slice(0, height);
 
   if (visible.length === 0) {
-    return [muted('no matches')];
+    return [theme.dim('no matches')];
   }
 
   return visible.map((item, index) => {
     const selected = index === state.selectedIndex;
-    const prefix = selected ? cyan('> ') : '  ';
-    const pathLabel = highlightPath(shortenPath(displayPath(item.record.path), width - 12), item.positions);
-    const score = muted(Math.round(item.score).toString().padStart(5, ' '));
+    const prefix = selected ? theme.accent('> ') : '  ';
+    const pathLabel = highlightPath(shortenPath(displayPath(item.record.path), width - 12), item.positions, theme);
+    const score = theme.score(Math.round(item.score).toString().padStart(5, ' '));
     const line = `${prefix}${pathLabel} ${score}`;
 
     if (selected) {
-      return inverse(fitLine(line, width));
+      return theme.selected(fitLine(line, width));
     }
 
     return fitLine(line, width);
   });
 }
 
-function previewLines(state: PickerState, width: number, height: number): readonly string[] {
+function previewLines(
+  state: PickerState,
+  width: number,
+  height: number,
+  theme: PickerTheme,
+): readonly string[] {
   const selected = state.ranked[state.selectedIndex];
   const title = selected === undefined ?
-    muted('preview') :
-    muted(shortenPath(displayPath(selected.record.path), width));
+    theme.previewTitle('preview') :
+    theme.previewTitle(shortenPath(displayPath(selected.record.path), width));
   const body = state.previewLines.slice(0, Math.max(0, height - 1)).map((line) => `  ${line}`);
 
   return [
@@ -281,11 +296,11 @@ function previewLines(state: PickerState, width: number, height: number): readon
   ];
 }
 
-function highlightPath(value: string, positions: readonly number[]): string {
+function highlightPath(value: string, positions: readonly number[], theme: PickerTheme): string {
   const highlighted = new Set(positions);
   const chars = [...value];
 
-  return chars.map((char, index) => highlighted.has(index) ? cyan(char) : char).join('');
+  return chars.map((char, index) => highlighted.has(index) ? theme.match(char) : char).join('');
 }
 
 function fitLine(value: string, width: number): string {

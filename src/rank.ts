@@ -13,6 +13,10 @@ export function rankDirectories(
   const ranked: RankedDirectory[] = [];
 
   for (const record of records) {
+    if (query.trim().length === 0 && record.discoveredFrom !== undefined) {
+      continue;
+    }
+
     const display = displayPath(record.path);
     const fuzzy = fuzzyMatch(query, display);
 

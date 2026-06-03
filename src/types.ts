@@ -1,4 +1,5 @@
 export interface DirectoryRecord {
+  readonly discoveredFrom?: string;
   readonly path: string;
   readonly firstSeenAt: number;
   readonly lastSeenAt: number;

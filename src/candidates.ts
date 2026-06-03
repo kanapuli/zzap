@@ -42,6 +42,7 @@ function syntheticChildRecord(
   nowMs: number,
 ): DirectoryRecord {
   return {
+    discoveredFrom: parent.path,
     firstSeenAt: nowMs,
     lastSeenAt: parent.lastSeenAt,
     path: path.join(parent.path, childName),

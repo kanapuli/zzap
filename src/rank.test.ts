@@ -73,3 +73,27 @@ test('rankDirectories prefers a literal path segment over an earlier loose match
 
   assert.equal(ranked[0]?.record.path, '/Users/example/WebstormProjects/zz/src');
 });
+
+test('rankDirectories hides discovered child directories for an empty query', () => {
+  const records: DirectoryRecord[] = [
+    {
+      firstSeenAt: 0,
+      lastSeenAt: 100,
+      path: '/work/project',
+      queryHits: {},
+      visits: 1,
+    },
+    {
+      discoveredFrom: '/work/project',
+      firstSeenAt: 200,
+      lastSeenAt: 100,
+      path: '/work/project/src',
+      queryHits: {},
+      visits: 0,
+    },
+  ];
+
+  const ranked = rankDirectories(records, '', 300);
+
+  assert.deepEqual(ranked.map((item) => item.record.path), ['/work/project']);
+});
