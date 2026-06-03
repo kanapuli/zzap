@@ -1,0 +1,4 @@
+interface:
+  display_name: "zzap Directory Resolver"
+  short_description: "Resolve local project directories with zzap JSON commands."
+  default_prompt: "Use zzap to find the right local project directory, choose a safe workdir, and record successful agent usage."
