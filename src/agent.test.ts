@@ -9,8 +9,8 @@ import {readStore, writeStore} from './store.js';
 import type {DirectoryRecord, StoreData} from './types.js';
 
 test('queryForAgent returns structured ranked child candidates', async () => {
-  const fixture = await createFixture();
-  const child = path.join(fixture.project, 'academic-paper');
+  const fixture = await createFixture('known-root');
+  const child = path.join(fixture.project, 'target-child');
 
   await fs.mkdir(child);
   await writeStore(fixture.storePath, storeWithRecords([
@@ -20,18 +20,18 @@ test('queryForAgent returns structured ranked child candidates', async () => {
   const response = await queryForAgent({
     limit: 5,
     nowMs: 2000,
-    query: 'paper',
+    query: 'target-child',
     storePath: fixture.storePath,
   });
 
-  assert.equal(response.query, 'paper');
+  assert.equal(response.query, 'target-child');
   assert.equal(response.results[0]?.path, child);
   assert.equal(response.results[0]?.source, 'child');
   assert.equal(response.results[0]?.discoveredFrom, fixture.project);
 });
 
 test('recordForAgent stores agent feedback separately from user visits', async () => {
-  const fixture = await createFixture();
+  const fixture = await createFixture('known-root');
 
   await writeStore(fixture.storePath, storeWithRecords([
     record(fixture.project, 1, 1000),
@@ -56,7 +56,7 @@ test('recordForAgent stores agent feedback separately from user visits', async (
 });
 
 test('agent feedback affects agent resolution without changing user ranking input', async () => {
-  const fixture = await createFixture();
+  const fixture = await createFixture('academic-project');
   const other = path.join(fixture.root, 'other-project');
 
   await fs.mkdir(other);
@@ -100,9 +100,9 @@ interface Fixture {
   readonly storePath: string;
 }
 
-async function createFixture(): Promise<Fixture> {
+async function createFixture(projectName: string): Promise<Fixture> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-agent-'));
-  const project = path.join(root, 'academic-project');
+  const project = path.join(root, projectName);
   const storePath = path.join(root, 'history.json');
 
   await fs.mkdir(project);

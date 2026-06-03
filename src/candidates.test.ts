@@ -8,7 +8,7 @@ import {rankDirectories} from './rank.js';
 import type {DirectoryRecord} from './types.js';
 
 test('candidateDirectories includes immediate child directories', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-candidates-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-fixture-'));
   const child = path.join(root, 'academic-paper');
 
   await fs.mkdir(child);
@@ -31,7 +31,7 @@ test('candidateDirectories includes immediate child directories', async () => {
 });
 
 test('rankDirectories can find a discovered child directory', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-candidates-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'zzap-fixture-'));
   const child = path.join(root, 'academic-paper');
 
   await fs.mkdir(child);
