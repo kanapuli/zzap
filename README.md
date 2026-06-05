@@ -40,16 +40,31 @@ npm run build
 npm link
 ```
 
-Add shell integration:
+Add shell integration to your shell config so `zz` can change the current
+directory from future terminal sessions.
+
+For zsh, add this to `~/.zshrc`:
 
 ```sh
 eval "$(zz init zsh)"
 ```
 
-For bash:
+Or append it directly:
+
+```sh
+printf '\neval "$(zz init zsh)"\n' >> ~/.zshrc
+```
+
+For bash, add this to `~/.bashrc`:
 
 ```sh
 eval "$(zz init bash)"
+```
+
+Or append it directly:
+
+```sh
+printf '\neval "$(zz init bash)"\n' >> ~/.bashrc
 ```
 
 ## Human Workflow
